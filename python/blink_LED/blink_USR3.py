@@ -62,10 +62,6 @@ import time
 # Main script
 # ------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    #set up LED USR3 pin for output
-   for i in range(4):
-        GPIO.setup("USR3", GPIO.OUT)
     #switch between between high(on) and low(off) every 0.1 sec
 while True:
         for i in range(1):
