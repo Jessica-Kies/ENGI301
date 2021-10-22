@@ -1,27 +1,57 @@
-# -*- coding: utf-8 -*-
+
+
 """
----------------------------------------------------------------------------
-PocketBeagle Arcade Machine
----------------------------------------------------------------------------
-License:   
-Copyright 2017 Octavo Systems, LLC
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 --------------------------------------------------------------------------
-Arcade Machine
+Candy Game
+--------------------------------------------------------------------------
+License:   
+Copyright 2021 <Jessica Kies>
 
-  Please see README.txt for overview and how to run the game.
-  
-  Please use run_arcade_machine.sh for instructions to auto-run the game at 
-boot
+Redistribution and use in source and binary forms, with or without 
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this 
+list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, 
+this list of conditions and the following disclaimer in the documentation 
+and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors 
+may be used to endorse or promote products derived from this software without 
+specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE 
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+--------------------------------------------------------------------------
+
+Candy Game
+    Overview: A patten wil play when the user presses the green button.
+    The user will repeat the pattern. If correct the servo will spin and release
+    a piece of candy (Jolly Rancher for this prototype). The difficulty then 
+    increases and slowly decreases over the next 20 minutes. If incorrect, the 
+    user will be locked out of the game for the next 20 minutes.
+ 
+    Code Info: Some code is not being used in the current iteration. It is
+    there for future iterations where the display will be implemented. Any
+    print statement is used for testing purposes. Some can be used on the 
+    display in future iterations.
+    
+    Please use run_candy_game.sh for instructions to auto-run the game at 
+    boot
+
+--------------------------------------------------------------------------
+The base of this code came from Franck Montano Ostrander's PocketBeagle 
+Arcade Machine which is accessible on Hackster.io.
+https://www.hackster.io/fdm3/pocketbeagle-arcade-machine-ee661e
 
 """
 import os
@@ -32,10 +62,11 @@ import sys
 import Adafruit_BBIO.PWM as PWM
 import Adafruit_BBIO.GPIO as GPIO
 
+
 # ------------------------------------------------------------------------
 # Global Constants
 # ------------------------------------------------------------------------
-
+"All the pieces are set to their corresponding pocketbeagle port below."
 # HT16K33 values
 DISPLAY_I2C_BUS              = 1                 # I2C 1  
 DISPLAY_I2C_ADDR             = 0x70
@@ -77,6 +108,7 @@ NOTES                        =  [262, 329, 392, 529]
 # ------------------------------------------------------------------------
 # Display Code
 # ------------------------------------------------------------------------
+"The display is setup to be programmed later."
 HEX_DIGITS                  = [0x3f, 0x06, 0x5b, 0x4f,    # 0, 1, 2, 3
                                0x66, 0x6d, 0x7d, 0x07,    # 4, 5, 6, 7
                                0x7f, 0x6f, 0x77, 0x7c,    # 8, 9, A, b
@@ -209,8 +241,9 @@ def update_display(value):
 # End def
     
 def setup_game():
-    """This function sets the buttons to read inputs. The LEDs are set to output 
-    and initially be off"""
+    """This function sets the buttons to read inputs. The LEDs are set to
+    output a value and to be off. The win time and again time are set so the
+    game begins on Level 1."""
     
     GPIO.setup(BUTTON0, GPIO.IN)
     GPIO.setup(BUTTON1, GPIO.IN)
@@ -227,25 +260,49 @@ def setup_game():
     global win_time
     win_time = 0
     global again_time
-    again_time = 30
+    again_time = 1500
     
     return win_time, again_time
     
+def lock_game():
+    """This function is used when the pattern is incorrectly repeated. The 
+    buzzer sounds letting the user know they lost. A lose count is started, so 
+    the game cannot be played for 20 minutes. After this time, the game waits
+    one minute to see if the user wants to try again."""
+    global lose_time
+    PWM.start(BUZZER, 100)
+    time.sleep(1)
+    PWM.stop(BUZZER)
+    while (time.time() - lose_time <= 1200):
+        print ("LOCK")
+    while(GPIO.input(BUTTON2) == 1):
+        time.sleep(0.1)
+        if (GPIO.input(BUTTON2) == 0):
+            play_game()
+        elif (time.time() - lose_time >= 1260):
+            clear_game()
     
 
-# ------------------------------------------------------------------------
-# Piezo Buzzer Code
-# ------------------------------------------------------------------------
-
-def play_note(note, sec):
-    PWM.start(BUZZER, 50, note)
-    time.sleep(sec)
-
+def clear_game():
+    """The LEDS are set to turn off and the games exits when done."""
+    GPIO.output(LED0, GPIO.LOW) 
+    GPIO.output(LED1, GPIO.LOW)
+    GPIO.output(LED2, GPIO.LOW)
+    GPIO.output(LED3, GPIO.LOW)
+    #print("off")
+    sys.exit()
+    
 # ------------------------------------------------------------------------
 # Game Code
 # ------------------------------------------------------------------------
 
 def play_game():
+    """The pattern is created. The length is based on the amount of time since
+    the last win. The LEDS ouput the pattern. The user repeats the pattern by 
+    pressing the corresponding button. If the pattern is correct, the servo
+    spins one quarter of a revolution. A count is started so the win time can 
+    be compared with the time when the next game starts. If the pattern is 
+    incorrect, a lose time is started while the lock function is called."""
     pattern = []
     user_input = []
     playing_game = True
@@ -261,16 +318,16 @@ def play_game():
 
     time.sleep(1)
     
-    if again_time - win_time <= 5:
-        a = 5   
-    elif again_time - win_time <= 10:
-        a = 4
-    elif again_time - win_time <= 15:
-        a = 3
-    elif again_time - win_time <= 20:
-        a = 2
+    if again_time - win_time <= 300:
+        a = 15   
+    elif again_time - win_time <= 600:
+        a = 13
+    elif again_time - win_time <= 900:
+        a = 11
+    elif again_time - win_time <= 1200:
+        a = 9
     else:
-        a = 1
+        a = 7
         
     
     for x in range(a):
@@ -290,88 +347,71 @@ def play_game():
             time.sleep(.5)
             user_input.append(0)
             GPIO.output(LED0, GPIO.LOW)
-            print("Button 0 accepts input") # TESTING 
+            #print("Button 0 accepts input") # TESTING 
         elif (GPIO.input(BUTTON1) == 0):
             GPIO.output(LED1, GPIO.HIGH)
             time.sleep(.5)
             user_input.append(1)
             GPIO.output(LED1, GPIO.LOW)
-            print("Button 1 accepts input") # TESTING 
-        elif (GPIO.input(BUTTON2) == 0): #Solved - Add SSH script (config-pin P2_18 gpio)
+            #print("Button 1 accepts input") # TESTING 
+        elif (GPIO.input(BUTTON2) == 0):
             GPIO.output(LED2, GPIO.HIGH)
             time.sleep(.5)
             user_input.append(2)
             GPIO.output(LED2, GPIO.LOW)
-            print("Button 2 accepts input") # TESTING 
+            #print("Button 2 accepts input") # TESTING 
         elif (GPIO.input(BUTTON3) == 0):
             GPIO.output(LED3, GPIO.HIGH)
             time.sleep(.5)
             user_input.append(3)
             GPIO.output(LED3, GPIO.LOW)
-            print("Button 3 accepts input") # TESTING
+            #print("Button 3 accepts input") # TESTING
     if (pattern == user_input):
-        print("win")
-        PWM.start(SERVO, 10)
-        time.sleep(1)
+        #print("win")
+        PWM.start(SERVO, 1)
+        time.sleep(0.09)
         PWM.stop(SERVO)
         win_time = time.time()
-        print(win_time)
+        #print(win_time)
         while(GPIO.input(BUTTON2) == 1):
             time.sleep(0.1)
-            if (time.time() - win_time <= 5):
+            if (time.time() - win_time <= 300):
                 print("LVL5")
-            elif (time.time() - win_time <= 10):
+            elif (time.time() - win_time <= 600):
                 print ('LVL4')
-            elif (time.time() - win_time <= 15):
+            elif (time.time() - win_time <= 900):
                 print ('LVL3')
-            elif (time.time() - win_time <= 20):
+            elif (time.time() - win_time <= 1200):
                 print ('LVL2')
-            elif (time.time() - win_time <= 25):
+            elif (time.time() - win_time <= 1300):
                 print ('LVL1')
             else:
                 clear_game()
         if (GPIO.input(BUTTON2) == 0):
             again_time = time.time()
-            print(again_time)
+            #print(again_time)
             play_game()
         #print(button_press_time)
     elif (pattern != user_input):
         global lose_time
         lose_time = time.time()
-        print("lose")
+        #print("lose")
         lock_game()
-        
 
 # End def
 
-def clear_game():
-    GPIO.output(LED0, GPIO.LOW) 
-    GPIO.output(LED1, GPIO.LOW)
-    GPIO.output(LED2, GPIO.LOW)
-    GPIO.output(LED3, GPIO.LOW)
-    print("off")
-    sys.exit()
+
     
-def lock_game():
-    global lose_time
-    while (time.time() - lose_time <= 5):
-        print ("LOCK")
-    while(GPIO.input(BUTTON2) == 1):
-        time.sleep(0.1)
-        if (GPIO.input(BUTTON2) == 0):
-            play_game()
-        elif (time.time() - lose_time >= 10):
-            clear_game()
+
 # ------------------------------------------------------------------------
 # Main script
 # ------------------------------------------------------------------------
         
 if __name__ == '__main__':
-    #display_setup()
+    display_setup()
     #display_clear()
     
     setup_game()
     
     playing = True
-    
     play_game()
