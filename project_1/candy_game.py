@@ -88,20 +88,20 @@ HIGH                         = "1"
 BUTTON0                      = "P2_22"           # gpio46
 BUTTON1                      = "P2_24"           # gpio44
 BUTTON2                      = "P2_18"           # gpio47
-BUTTON3                      = "P2_20"            # gpio64
+BUTTON3                      = "P2_20"           # gpio64
 BUTTONS                      = [BUTTON0, BUTTON1, BUTTON2, BUTTON3]
 
 # LED GPIO values
 LED0                         = "P2_2"          # gpio59
 LED1                         = "P2_4"          # gpio58
-LED2                         = "P2_6"           # gpio57
-LED3                         = "P2_8"           # gpio60
+LED2                         = "P2_6"          # gpio57
+LED3                         = "P2_8"          # gpio60
 LEDS                         = [LED0, LED1, LED2, LED3]
   
 # Buzzer GPIO value
-BUZZER                       = "P2_1"           # gpio50
+BUZZER                       = "P2_1"          # gpio50
 
-SERVO                       = "P1_36"
+SERVO                        = "P1_36"
 
 NOTES                        =  [262, 329, 392, 529]
 
@@ -267,30 +267,27 @@ def setup_game():
 def lock_game():
     """This function is used when the pattern is incorrectly repeated. The 
     buzzer sounds letting the user know they lost. A lose count is started, so 
-    the game cannot be played for 20 minutes. After this time, the game waits
-    one minute to see if the user wants to try again."""
+    the game cannot be played for 20 minutes."""
     global lose_time
     PWM.start(BUZZER, 100)
     time.sleep(1)
     PWM.stop(BUZZER)
     while (time.time() - lose_time <= 1200):
         print ("LOCK")
-    while(GPIO.input(BUTTON2) == 1):
-        time.sleep(0.1)
-        if (GPIO.input(BUTTON2) == 0):
-            play_game()
-        elif (time.time() - lose_time >= 1260):
-            clear_game()
+    clear_game()
     
 
 def clear_game():
-    """The LEDS are set to turn off and the games exits when done."""
+    """The LEDS are set to turn off and the game waits for the next start input."""
     GPIO.output(LED0, GPIO.LOW) 
     GPIO.output(LED1, GPIO.LOW)
     GPIO.output(LED2, GPIO.LOW)
     GPIO.output(LED3, GPIO.LOW)
     #print("off")
-    sys.exit()
+    while(GPIO.input(BUTTON2) == 1):
+        time.sleep(0.1)
+        if (GPIO.input(BUTTON2) == 0):
+            play_game()
     
 # ------------------------------------------------------------------------
 # Game Code
@@ -303,6 +300,8 @@ def play_game():
     spins one quarter of a revolution. A count is started so the win time can 
     be compared with the time when the next game starts. If the pattern is 
     incorrect, a lose time is started while the lock function is called."""
+    
+    
     pattern = []
     user_input = []
     playing_game = True
@@ -414,4 +413,8 @@ if __name__ == '__main__':
     setup_game()
     
     playing = True
-    play_game()
+    
+    while(GPIO.input(BUTTON2) == 1):
+        time.sleep(0.1)
+        if (GPIO.input(BUTTON2) == 0):
+            play_game()
