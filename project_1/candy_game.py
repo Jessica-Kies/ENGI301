@@ -52,17 +52,17 @@ LOW                          = "0"
 HIGH                         = "1"
 
 # Button GPIO values
-BUTTON0                      = (1, 27)           # gpio59 / P2_2
-BUTTON1                      = (1, 25)           # gpio57 / P2_6
+BUTTON0                      = (1, 14)           # gpio46 / P2_22
+BUTTON1                      = (1, 12)           # gpio44 / P2_24
 BUTTON2                      = (1, 15)           # gpio47 / P2_18
-BUTTON3                      = (1, 14)           # gpio46 / P2_22
+BUTTON3                      = (2, 0)            # gpio64 / P2_20
 BUTTONS                      = [BUTTON0, BUTTON1, BUTTON2, BUTTON3]
 
 # LED GPIO values
-LED0                         = (1, 26)           # gpio58 / P2_4
-LED1                         = (1, 27)           # gpio60 / P2_8 
-LED2                         = (2, 0)            # gpio64 / P2_20
-LED3                         = (1, 12)           # gpio44 / P2_24
+LED0                         = (1, 27)           # gpio59 / P2_2
+LED1                         = (1, 26)           # gpio58 / P2_4 
+LED2                         = (1, 25)           # gpio57 / P2_6
+LED3                         = (1, 28)           # gpio60 / P2_8
 LEDS                         = [LED0, LED1, LED2, LED3]
   
 # Buzzer GPIO value
@@ -336,30 +336,36 @@ def play_game():
     while (len(user_input) < len(pattern)):   # Wait until any button is pressed
         if (gpio_get(BUTTON0) == 0):
             gpio_set(LED0, HIGH)
-            time.sleep(.2)
+            time.sleep(.5)
             user_input.append(0)
             gpio_set(LED0, LOW)
             print("Button 0 accepts input") # TESTING 
         elif (gpio_get(BUTTON1) == 0):
             gpio_set(LED1, HIGH)
-            time.sleep(.2)
+            time.sleep(.5)
             user_input.append(1)
-            time.sleep(0.5)
             gpio_set(LED1, LOW)
             print("Button 1 accepts input") # TESTING 
         elif (gpio_get(BUTTON2) == 0): #Solved - Add SSH script (config-pin P2_18 gpio)
             gpio_set(LED2, HIGH)
-            time.sleep(.2)
+            time.sleep(.5)
             user_input.append(2)
             gpio_set(LED2, LOW)
             print("Button 2 accepts input") # TESTING 
         elif (gpio_get(BUTTON3) == 0):
             gpio_set(LED3, HIGH)
-            time.sleep(.2)
+            time.sleep(.5)
             user_input.append(3)
             gpio_set(LED3, LOW)
             print("Button 3 accepts input") # TESTING
-        
+    if (pattern == user_input):
+        print("win")
+    elif (pattern != user_input):
+        print("lose")
+    
+    
+
+
 # End def
     
 # ------------------------------------------------------------------------
