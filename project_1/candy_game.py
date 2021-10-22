@@ -27,6 +27,7 @@ boot
 import os
 import random
 import time
+import sys
 
 import Adafruit_BBIO.PWM as PWM
 import Adafruit_BBIO.GPIO as GPIO
@@ -72,81 +73,6 @@ BUZZER                       = "P2_1"           # gpio50
 SERVO                       = "P1_36"
 
 NOTES                        =  [262, 329, 392, 529]
-
-# ------------------------------------------------------------------------
-# GPIO/ADC access library
-# ------------------------------------------------------------------------
-
-def gpio_setup(gpio, direction, default_value=False):
-    """Setup GPIO pin
-    
-      * Test if GPIO exists; if not create it
-      * Set direction
-      * Set default value
-    """
-    gpio_number = str((gpio[0] * 32) + gpio[1])
-    path        = "{0}/gpio{1}".format(GPIO_BASE_PATH, gpio_number)
-    
-    if not os.path.exists(path):
-        # "echo {gpio_number} > {GPIO_BASE_PATH}/export"
-        print("Create GPIO: {0}".format(gpio_number))
-        with open("{0}/export".format(GPIO_BASE_PATH), 'w') as f:
-            f.write(gpio_number)
-    
-    if direction:
-        # "echo in > {path}/direction"
-        with open("{0}/direction".format(path), 'w') as f:
-            f.write("in")
-    else:
-        # "echo out > {path}/direction"
-        with open("{0}/direction".format(path), 'w') as f:
-            f.write("out")
-        
-    if default_value:
-        # "echo {default_value} > {path}/value"
-        with open("{0}/value".format(path), 'w') as f:
-            f.write(default_value)
-    
-# End def
-
-
-def gpio_set(gpio, value):
-    """Set GPIO ouptut value."""
-    gpio_number = str((gpio[0] * 32) + gpio[1])
-    path        = "{0}/gpio{1}".format(GPIO_BASE_PATH, gpio_number)
-    
-    # "echo {value} > {path}/value"
-    with open("{0}/value".format(path), 'w') as f:
-        f.write(value)
-
-# End def
-
-
-def gpio_get(gpio):
-    """Get GPIO input value."""
-    gpio_number = str((gpio[0] * 32) + gpio[1])
-    path        = "{0}/gpio{1}".format(GPIO_BASE_PATH, gpio_number)
-    
-    # "cat {path}/value"
-    with open("{0}/value".format(path), 'r') as f:
-        out = f.read()
-    
-    return float(out)
-
-# End def
-
-
-def adc_get(channel):
-    """Get ADC input value.
-    
-    Returns:
-        value (float):  Value will be between 0 (0V) and 1.0 (1.8V)."""
-    with open("{0}/{1}".format(ADC_BASE_PATH, channel), 'r') as f:
-        out = f.read()
-    
-    return float(float(out) / float(4096))
-
-# End def
 
 # ------------------------------------------------------------------------
 # Display Code
@@ -283,7 +209,8 @@ def update_display(value):
 # End def
     
 def setup_game():
-    "Setup the buttons for the game"
+    """This function sets the buttons to read inputs. The LEDs are set to output 
+    and initially be off"""
     
     GPIO.setup(BUTTON0, GPIO.IN)
     GPIO.setup(BUTTON1, GPIO.IN)
@@ -294,10 +221,17 @@ def setup_game():
     GPIO.setup(LED1, GPIO.OUT, GPIO.LOW)
     GPIO.setup(LED2, GPIO.OUT, GPIO.LOW)
     GPIO.setup(LED3, GPIO.OUT, GPIO.LOW)
-    
-    #gpio_setup(BUZZER, OUT, LOW)
         
     display_setup
+    
+    global win_time
+    win_time = 0
+    global again_time
+    again_time = 30
+    
+    return win_time, again_time
+    
+    
 
 # ------------------------------------------------------------------------
 # Piezo Buzzer Code
@@ -314,21 +248,34 @@ def play_note(note, sec):
 def play_game():
     pattern = []
     user_input = []
-    score = 0
     playing_game = True
+    global win_time
+    global again_time
     
     GPIO.output(LED0, GPIO.LOW) 
     GPIO.output(LED1, GPIO.LOW)
     GPIO.output(LED2, GPIO.LOW)
     GPIO.output(LED3, GPIO.LOW)
 
-    
+    #win_time, again_time = setup_game()
+
     time.sleep(1)
     
+    if again_time - win_time <= 5:
+        a = 5   
+    elif again_time - win_time <= 10:
+        a = 4
+    elif again_time - win_time <= 15:
+        a = 3
+    elif again_time - win_time <= 20:
+        a = 2
+    else:
+        a = 1
+        
     
-    for x in range(1):
-       rand = random.randint(0, 3)
-       pattern.append(rand)
+    for x in range(a):
+        rand = random.randint(0, 3)
+        pattern.append(rand)
     print(pattern)
     
     for i in range(0, len(pattern)):
@@ -367,26 +314,63 @@ def play_game():
         PWM.start(SERVO, 10)
         time.sleep(1)
         PWM.stop(SERVO)
+        win_time = time.time()
+        print(win_time)
+        while(GPIO.input(BUTTON2) == 1):
+            time.sleep(0.1)
+            if (time.time() - win_time <= 5):
+                print("LVL5")
+            elif (time.time() - win_time <= 10):
+                print ('LVL4')
+            elif (time.time() - win_time <= 15):
+                print ('LVL3')
+            elif (time.time() - win_time <= 20):
+                print ('LVL2')
+            elif (time.time() - win_time <= 25):
+                print ('LVL1')
+            else:
+                clear_game()
+        if (GPIO.input(BUTTON2) == 0):
+            again_time = time.time()
+            print(again_time)
+            play_game()
+        #print(button_press_time)
     elif (pattern != user_input):
+        global lose_time
+        lose_time = time.time()
         print("lose")
+        lock_game()
         
-    
-    
-    
-
 
 # End def
+
+def clear_game():
+    GPIO.output(LED0, GPIO.LOW) 
+    GPIO.output(LED1, GPIO.LOW)
+    GPIO.output(LED2, GPIO.LOW)
+    GPIO.output(LED3, GPIO.LOW)
+    print("off")
+    sys.exit()
     
+def lock_game():
+    global lose_time
+    while (time.time() - lose_time <= 5):
+        print ("LOCK")
+    while(GPIO.input(BUTTON2) == 1):
+        time.sleep(0.1)
+        if (GPIO.input(BUTTON2) == 0):
+            play_game()
+        elif (time.time() - lose_time >= 10):
+            clear_game()
 # ------------------------------------------------------------------------
 # Main script
 # ------------------------------------------------------------------------
         
 if __name__ == '__main__':
-    display_setup()
-    display_clear()
+    #display_setup()
+    #display_clear()
     
     setup_game()
-    
     
     playing = True
     
