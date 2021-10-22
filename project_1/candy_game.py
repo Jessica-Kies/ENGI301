@@ -29,6 +29,7 @@ import random
 import time
 
 import Adafruit_BBIO.PWM as PWM
+import Adafruit_BBIO.GPIO as GPIO
 
 # ------------------------------------------------------------------------
 # Global Constants
@@ -52,21 +53,23 @@ LOW                          = "0"
 HIGH                         = "1"
 
 # Button GPIO values
-BUTTON0                      = (1, 14)           # gpio46 / P2_22
-BUTTON1                      = (1, 12)           # gpio44 / P2_24
-BUTTON2                      = (1, 15)           # gpio47 / P2_18
-BUTTON3                      = (2, 0)            # gpio64 / P2_20
+BUTTON0                      = "P2_22"           # gpio46
+BUTTON1                      = "P2_24"           # gpio44
+BUTTON2                      = "P2_18"           # gpio47
+BUTTON3                      = "P2_20"            # gpio64
 BUTTONS                      = [BUTTON0, BUTTON1, BUTTON2, BUTTON3]
 
 # LED GPIO values
-LED0                         = (1, 27)           # gpio59 / P2_2
-LED1                         = (1, 26)           # gpio58 / P2_4 
-LED2                         = (1, 25)           # gpio57 / P2_6
-LED3                         = (1, 28)           # gpio60 / P2_8
+LED0                         = "P2_2"          # gpio59
+LED1                         = "P2_4"          # gpio58
+LED2                         = "P2_6"           # gpio57
+LED3                         = "P2_8"           # gpio60
 LEDS                         = [LED0, LED1, LED2, LED3]
   
 # Buzzer GPIO value
-BUZZER                       = "P2_1"           # gpio50 / (1, 18)
+BUZZER                       = "P2_1"           # gpio50
+
+SERVO                       = "P1_36"
 
 NOTES                        =  [262, 329, 392, 529]
 
@@ -282,15 +285,15 @@ def update_display(value):
 def setup_game():
     "Setup the buttons for the game"
     
-    gpio_setup(BUTTON0, IN)
-    gpio_setup(BUTTON1, IN)
-    gpio_setup(BUTTON2, IN)
-    gpio_setup(BUTTON3, IN)    
+    GPIO.setup(BUTTON0, GPIO.IN)
+    GPIO.setup(BUTTON1, GPIO.IN)
+    GPIO.setup(BUTTON2, GPIO.IN)
+    GPIO.setup(BUTTON3, GPIO.IN)    
 
-    gpio_setup(LED0, OUT, LOW)
-    gpio_setup(LED1, OUT, LOW)
-    gpio_setup(LED2, OUT, LOW)
-    gpio_setup(LED3, OUT, LOW)
+    GPIO.setup(LED0, GPIO.OUT, GPIO.LOW) 
+    GPIO.setup(LED1, GPIO.OUT, GPIO.LOW)
+    GPIO.setup(LED2, GPIO.OUT, GPIO.LOW)
+    GPIO.setup(LED3, GPIO.OUT, GPIO.LOW)
     
     #gpio_setup(BUZZER, OUT, LOW)
         
@@ -314,54 +317,60 @@ def play_game():
     score = 0
     playing_game = True
     
-    gpio_set(LED0, LOW) 
-    gpio_set(LED1, LOW)
-    gpio_set(LED2, LOW)
-    gpio_set(LED3, LOW) 
+    GPIO.output(LED0, GPIO.LOW) 
+    GPIO.output(LED1, GPIO.LOW)
+    GPIO.output(LED2, GPIO.LOW)
+    GPIO.output(LED3, GPIO.LOW)
+
     
     time.sleep(1)
     
     
-    for x in range(7):
+    for x in range(1):
        rand = random.randint(0, 3)
        pattern.append(rand)
     print(pattern)
     
     for i in range(0, len(pattern)):
-        gpio_set(LEDS[pattern[i]], HIGH)
+        GPIO.output(LEDS[pattern[i]], GPIO.HIGH)
         time.sleep(0.5)
-        gpio_set(LEDS[pattern[i]], LOW)
+        GPIO.output(LEDS[pattern[i]], GPIO.LOW)
         time.sleep(0.5)
         
     while (len(user_input) < len(pattern)):   # Wait until any button is pressed
-        if (gpio_get(BUTTON0) == 0):
-            gpio_set(LED0, HIGH)
+        if (GPIO.input(BUTTON0) == 0):
+            GPIO.output(LED0, GPIO.HIGH)
             time.sleep(.5)
             user_input.append(0)
-            gpio_set(LED0, LOW)
+            GPIO.output(LED0, GPIO.LOW)
             print("Button 0 accepts input") # TESTING 
-        elif (gpio_get(BUTTON1) == 0):
-            gpio_set(LED1, HIGH)
+        elif (GPIO.input(BUTTON1) == 0):
+            GPIO.output(LED1, GPIO.HIGH)
             time.sleep(.5)
             user_input.append(1)
-            gpio_set(LED1, LOW)
+            GPIO.output(LED1, GPIO.LOW)
             print("Button 1 accepts input") # TESTING 
-        elif (gpio_get(BUTTON2) == 0): #Solved - Add SSH script (config-pin P2_18 gpio)
-            gpio_set(LED2, HIGH)
+        elif (GPIO.input(BUTTON2) == 0): #Solved - Add SSH script (config-pin P2_18 gpio)
+            GPIO.output(LED2, GPIO.HIGH)
             time.sleep(.5)
             user_input.append(2)
-            gpio_set(LED2, LOW)
+            GPIO.output(LED2, GPIO.LOW)
             print("Button 2 accepts input") # TESTING 
-        elif (gpio_get(BUTTON3) == 0):
-            gpio_set(LED3, HIGH)
+        elif (GPIO.input(BUTTON3) == 0):
+            GPIO.output(LED3, GPIO.HIGH)
             time.sleep(.5)
             user_input.append(3)
-            gpio_set(LED3, LOW)
+            GPIO.output(LED3, GPIO.LOW)
             print("Button 3 accepts input") # TESTING
     if (pattern == user_input):
         print("win")
+        PWM.start(SERVO, 10)
+        time.sleep(1)
+        PWM.stop(SERVO)
     elif (pattern != user_input):
         print("lose")
+        
+    
     
     
 
