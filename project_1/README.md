@@ -10,3 +10,5 @@ displayed after the user wins. The display will say “lock” when the user los
 The run_candy_game.sh file was created so the code could run without being connected to the computer. This is implemented using the command window. First a logs directory needs 
 to be created. Then the line: “sudo crontab -e”. The next line of code is dependent on the path. For my code it was: 
 “@reboot sleep 15 && sh /var/lib/cloud9/ENGI301/project_1/run_candy_game.sh >/var/lib/cloud9/ENGI301/project_1/logs/cronlog 2>&1”.
+
+To learn more about the physical aspects of this project go to: https://www.hackster.io/jnk1/candy-game-box-using-pocket-beagle-d55049 
